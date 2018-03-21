@@ -903,8 +903,10 @@ dorecv(void *s, char *buf, int bufsize)
 	do {
 		errno = 0;
 		rc = read(sock, p, remaining);
-		if (rc == -1)
+		if (rc == -1){
+			perror("DORECV: read call failed:");
 			return -1;
+		}
 		if (rc == 0)
 			break;
 		bytes += rc;
@@ -912,8 +914,10 @@ dorecv(void *s, char *buf, int bufsize)
 		remaining -= rc;
 	} while (bytes < bufsize);
 
-	if (bytes != bufsize)
+	if (bytes != bufsize){
+		perror("DORECV: bytes != bufsize");
 		return -1;
+	}
 #endif
 	return 0;
 }
