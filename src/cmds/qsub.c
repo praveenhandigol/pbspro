@@ -5280,6 +5280,7 @@ do_daemon_stuff(char *file, char *handle, char *server)
 	int svr_sock = -1;
 	HANDLE handles[2];
 	time_t connect_time = 0;
+	int dispipe = 0;
 
 	sd_svr = -1; /* not connected */
 	hEventParent = atoi(handle);
@@ -5341,8 +5342,12 @@ do_daemon_stuff(char *file, char *handle, char *server)
 
 					handles[0] = hEvent;
 					handles[1] = hSockEvent;
-					rc = WaitForMultipleObjects(2, handles,
-						FALSE, QSUB_DMN_TIMEOUT_LONG * 1000);
+					if(dispipe == 1)
+						rc = WaitForMultipleObjects(2, handles,
+							FALSE, QSUB_DMN_TIMEOUT_SHORT * 1000);
+					else
+						rc = WaitForMultipleObjects(2, handles,
+                                                        FALSE, QSUB_DMN_TIMEOUT_LONG * 1000);
 					if (rc == WAIT_FAILED)
 						goto error;
 					if (rc == WAIT_TIMEOUT)
@@ -5396,9 +5401,11 @@ do_daemon_stuff(char *file, char *handle, char *server)
 			 * request could take a while to reach server and get processed
 			 * Qsub then does a regular submit (new connection)
 			 */
-			if ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
-				goto error;
-
+			if (dispipe == 0 && ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))){
+				ResetEvent(hEvent);
+				DisconnectNamedPipe(hPipe);
+				dispipe = 1;
+			}
 			svr_sock = pbs_connection_getsocket(sd_svr);
 			rc = do_submit2(retmsg);
 		}
