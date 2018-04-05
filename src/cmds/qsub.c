@@ -5610,7 +5610,7 @@ do_daemon_stuff(void)
 	sigset_t newsigmask, oldsigmask;
 	char *err_op = "";
 	char log_buf[LOG_BUF_SIZE];
-	int fl_unlinked = 0;
+	int cred_timeout = 0;
 
 	/* set umask so socket file created is only accessible by same user */
 	umask(cmask);
@@ -5647,8 +5647,8 @@ do_daemon_stuff(void)
 
 		timeout.tv_usec = 0;
 		/* since timeout gets reset on Linux */
-		if (fl_unlinked == 1)
-			timeout.tv_sec = QSUB_DMN_TIMEOUT_SHORT;
+		if (cred_timeout == 1)
+			timeout.tv_sec = QSUB_DMN_TIMEOUT_SHORT; /* Short timeout to allow any foreground process to finsih before exiting */
 		else
 			timeout.tv_sec = QSUB_DMN_TIMEOUT_LONG;
 		n = select(maxfd + 1, &workset, NULL, NULL, &timeout);
@@ -5665,9 +5665,9 @@ do_daemon_stuff(void)
 		 * request could take a while to reach server and get processed
 		 * Qsub then does a regular submit (new connection)
 		 */
-		if (fl_unlinked == 0 && ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))) {
+		if (cred_timeout == 0 && ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))) {
 	                unlink(fl);
-			fl_unlinked = 1;
+			cred_timeout = 1;
 		}
 
 		if (FD_ISSET(svr_sock, &workset)) {
@@ -5782,8 +5782,8 @@ do_daemon_stuff(void)
 	}
 
 out:
-	unlink(fl);
 	close(bindfd);
+	unlink(fl);
 	exit(0);
 
 error:
