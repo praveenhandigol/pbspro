@@ -5350,8 +5350,10 @@ do_daemon_stuff(char *file, char *handle, char *server)
                                                         FALSE, QSUB_DMN_TIMEOUT_LONG * 1000);
 					if (rc == WAIT_FAILED)
 						goto error;
-					if (rc == WAIT_TIMEOUT)
+					if (rc == WAIT_TIMEOUT){
+						ResetEvent(hEvent);
 						goto out;
+					}
 					if (rc == WAIT_OBJECT_0 + 1) {
 						if (recv(svr_sock, &rc, 1,
 							MSG_OOB) < 1) {
@@ -5402,7 +5404,6 @@ do_daemon_stuff(char *file, char *handle, char *server)
 			 * Qsub then does a regular submit (new connection)
 			 */
 			if (dispipe == 0 && ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))){
-				ResetEvent(hEvent);
 				DisconnectNamedPipe(hPipe);
 				dispipe = 1;
 			}
