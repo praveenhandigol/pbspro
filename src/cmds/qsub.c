@@ -5351,7 +5351,6 @@ do_daemon_stuff(char *file, char *handle, char *server)
 					if (rc == WAIT_FAILED)
 						goto error;
 					if (rc == WAIT_TIMEOUT){
-						FlushFileBuffers(hPipe);
 						goto out;
 					}
 					if (rc == WAIT_OBJECT_0 + 1) {
@@ -5404,6 +5403,7 @@ do_daemon_stuff(char *file, char *handle, char *server)
 			 * Qsub then does a regular submit (new connection)
 			 */
 			if (dispipe == 0 && ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))){
+				FlushFileBuffers(hPipe);
 				DisconnectNamedPipe(hPipe);
 				dispipe = 1;
 			}
