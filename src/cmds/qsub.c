@@ -5351,6 +5351,7 @@ do_daemon_stuff(char *file, char *handle, char *server)
 					if (rc == WAIT_FAILED)
 						goto error;
 					if (rc == WAIT_TIMEOUT){
+						FlushFileBuffers(hPipe);
 						goto out;
 					}
 					if (rc == WAIT_OBJECT_0 + 1) {
