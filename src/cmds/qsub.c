@@ -5280,6 +5280,7 @@ do_daemon_stuff(char *file, char *handle, char *server)
 	int svr_sock = -1;
 	HANDLE handles[2];
 	time_t connect_time = 0;
+	time_t connect_time1 = time(0);
 
 	sd_svr = -1; /* not connected */
 	hEventParent = atoi(handle);
@@ -5338,6 +5339,8 @@ do_daemon_stuff(char *file, char *handle, char *server)
 					if (WSAEventSelect(svr_sock, hSockEvent,
 						FD_CLOSE | FD_READ) != 0)
 						goto error;
+					if ((time(0) - connect_time1) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
+                                		goto error;
 
 					handles[0] = hEvent;
 					handles[1] = hSockEvent;
@@ -5396,8 +5399,9 @@ do_daemon_stuff(char *file, char *handle, char *server)
 			 * request could take a while to reach server and get processed
 			 * Qsub then does a regular submit (new connection)
 			 */
-			if ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
+		/*	if ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
 				goto error;
+		*/
 
 			svr_sock = pbs_connection_getsocket(sd_svr);
 			rc = do_submit2(retmsg);
