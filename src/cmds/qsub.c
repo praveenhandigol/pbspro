@@ -5280,7 +5280,7 @@ do_daemon_stuff(char *file, char *handle, char *server)
 	int svr_sock = -1;
 	HANDLE handles[2];
 	time_t connect_time = 0;
-	time_t connect_time1 = time(0);
+	time_t cred_connect_time = time(0); /* Record current time to compare against the credential timeout value of 30 mins */
 
 	sd_svr = -1; /* not connected */
 	hEventParent = atoi(handle);
@@ -5339,7 +5339,14 @@ do_daemon_stuff(char *file, char *handle, char *server)
 					if (WSAEventSelect(svr_sock, hSockEvent,
 						FD_CLOSE | FD_READ) != 0)
 						goto error;
-					if ((time(0) - connect_time1) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
+
+				       /*
+			 		* check if we are past the credential timeout
+			 		* Error out even if it is close to CREDENTIAL_LIFETIME, as
+			 		* request could take a while to reach server and get processed
+			 		* Qsub then does a regular submit (new connection)
+			 		*/
+					if ((time(0) - cred_connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
                                 		goto error;
 
 					handles[0] = hEvent;
@@ -5393,16 +5400,6 @@ do_daemon_stuff(char *file, char *handle, char *server)
 		}
 
 		if (sd_svr != -1) {
-			/*
-			 * check if we are past the credential timeout
-			 * Error out even if it is close to CREDENTIAL_LIFETIME, as
-			 * request could take a while to reach server and get processed
-			 * Qsub then does a regular submit (new connection)
-			 */
-		/*	if ((time(0) - connect_time) > (CREDENTIAL_LIFETIME - QSUB_DMN_TIMEOUT_LONG))
-				goto error;
-		*/
-
 			svr_sock = pbs_connection_getsocket(sd_svr);
 			rc = do_submit2(retmsg);
 		}
